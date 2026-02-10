@@ -21,9 +21,11 @@ import { GuideSection } from './components/GuideSection';
 import { ShowcaseSection } from './components/ShowcaseSection';
 import SchemaForm from './components/SchemaForm';
 import PreviewPanel from './components/PreviewPanel';
+import Documentation from './pages/Documentation';
 
 // --- Types ---
 type TabId = 'faq' | 'product' | 'local-business' | 'article';
+type ViewState = 'home' | 'docs';
 
 interface Tab {
   id: TabId;
@@ -46,7 +48,7 @@ const cn = (...classes: (string | undefined | null | false)[]) => {
 
 // --- Sub-Components (Header/Footer) ---
 
-const Header = ({ onGetStarted }: { onGetStarted: () => void }) => {
+const Header = ({ onGetStarted, onNavigate }: { onGetStarted: () => void; onNavigate: (view: ViewState) => void }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -55,7 +57,10 @@ const Header = ({ onGetStarted }: { onGetStarted: () => void }) => {
         {/* Logo */}
         {/* Brand Logo Area */}
         <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={() => {
+            onNavigate('home');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           className="flex items-center gap-2.5 group focus:outline-none"
           aria-label="Go to Home"
         >
@@ -77,8 +82,24 @@ const Header = ({ onGetStarted }: { onGetStarted: () => void }) => {
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="hover:text-[#3182F6] transition-colors">Home</button>
-          <a href="#" className="hover:text-[#3182F6] transition-colors">Documentation</a>
+          <button
+            onClick={() => {
+              onNavigate('home');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="hover:text-[#3182F6] transition-colors"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => {
+              onNavigate('docs');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="hover:text-[#3182F6] transition-colors"
+          >
+            Documentation
+          </button>
           <button
             onClick={onGetStarted}
             className="px-4 py-2 bg-slate-900 text-white rounded-full hover:bg-slate-800 transition-colors text-xs font-semibold"
@@ -100,8 +121,26 @@ const Header = ({ onGetStarted }: { onGetStarted: () => void }) => {
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 p-4 shadow-lg">
           <nav className="flex flex-col gap-4 text-sm font-medium text-slate-600">
-            <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-left hover:text-[#3182F6]">Home</button>
-            <a href="#" className="hover:text-[#3182F6]">Documentation</a>
+            <button
+              onClick={() => {
+                onNavigate('home');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left hover:text-[#3182F6]"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => {
+                onNavigate('docs');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setIsMobileMenuOpen(false);
+              }}
+              className="text-left hover:text-[#3182F6]"
+            >
+              Documentation
+            </button>
             <hr className="border-slate-100" />
             <button onClick={() => { onGetStarted(); setIsMobileMenuOpen(false); }} className="text-[#3182F6] font-semibold text-left">
               Get Started
@@ -163,92 +202,115 @@ const TabNavigation = ({ activeTab, onTabChange }: { activeTab: TabId; onTabChan
 // --- Main App Component ---
 
 const App = () => {
+  const [view, setView] = useState<ViewState>('home');
   const [activeTab, setActiveTab] = useState<TabId>('faq');
   const [formData, setFormData] = useState<any>(null);
 
   // Smooth Scroll Function
   const scrollToGenerator = () => {
-    const generatorSection = document.getElementById('generator');
-    if (generatorSection) {
-      generatorSection.scrollIntoView({ behavior: 'smooth' });
+    if (view !== 'home') {
+      setView('home');
+      setTimeout(() => {
+        const generatorSection = document.getElementById('generator');
+        if (generatorSection) {
+          generatorSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const generatorSection = document.getElementById('generator');
+      if (generatorSection) {
+        generatorSection.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-900 bg-white">
       {/* 1. Header */}
-      <Header onGetStarted={scrollToGenerator} />
+      <Header onGetStarted={scrollToGenerator} onNavigate={setView} />
 
-      {/* 2. Landing Sections */}
-      <HeroSection />
-      <ShowcaseSection />
-      <GuideSection />
+      {/* 2. Main Content */}
+      <div className="flex-1">
+        {view === 'home' ? (
+          <>
+            {/* Landing Sections */}
+            <HeroSection />
+            <ShowcaseSection />
+            <GuideSection />
 
-      {/* 3. Generator Tool Area */}
-      <div id="generator" className="w-full bg-white flex flex-col min-h-screen scroll-mt-16">
+            {/* 3. Generator Tool Area */}
+            <div id="generator" className="w-full bg-white flex flex-col min-h-screen scroll-mt-16">
 
-        <TabNavigation activeTab={activeTab} onTabChange={(id) => {
-          setActiveTab(id);
-          setFormData(null);
-        }} />
+              <TabNavigation activeTab={activeTab} onTabChange={(id) => {
+                setActiveTab(id);
+                setFormData(null);
+              }} />
 
-        {/* Content Area (Form + Preview) */}
-        <div className="flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-8 py-8 md:py-10">
-          <div className="flex flex-col lg:flex-row gap-12 items-start relative">
+              {/* Content Area (Form + Preview) */}
+              <div className="flex-1 w-full max-w-[1600px] mx-auto px-6 md:px-8 py-8 md:py-10">
+                <div className="flex flex-col lg:flex-row gap-12 items-start relative">
 
-            {/* Left: Configuration Form */}
-            <div className="w-full lg:w-1/2 min-w-0">
-              {/* SINGLE SOURCE OF TITLE */}
-              <div className="mb-8 border-b border-slate-100 pb-6">
-                <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-                  {activeTab === 'local-business' && 'Local Business Configuration'}
-                  {activeTab === 'product' && 'Product & Stars Configuration'}
-                  {activeTab === 'faq' && 'FAQ Configuration'}
-                  {activeTab === 'article' && 'News & Article Configuration'}
-                </h2>
-                <p className="text-slate-500 mt-2 text-lg">
-                  Enter the details below to generate your structured data for A.I Search.
-                </p>
-              </div>
-
-              <SchemaForm
-                activeTab={activeTab}
-                onDataChange={setFormData}
-              />
-            </div>
-
-            {/* Right: Preview Panel */}
-            <div className="w-full lg:w-1/2 lg:sticky lg:top-24 z-10">
-              <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-
-                {/* 1. Unified Header Section */}
-                <div className="px-5 pt-5 pb-4 border-b border-slate-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1 bg-blue-100 rounded text-blue-600">
-                      <Info className="w-3.5 h-3.5" />
+                  {/* Left: Configuration Form */}
+                  <div className="w-full lg:w-1/2 min-w-0">
+                    {/* SINGLE SOURCE OF TITLE */}
+                    <div className="mb-8 border-b border-slate-100 pb-6">
+                      <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
+                        {activeTab === 'local-business' && 'Local Business Configuration'}
+                        {activeTab === 'product' && 'Product & Stars Configuration'}
+                        {activeTab === 'faq' && 'FAQ Configuration'}
+                        {activeTab === 'article' && 'News & Article Configuration'}
+                      </h2>
+                      <p className="text-slate-500 mt-2 text-lg">
+                        Enter the details below to generate your structured data for A.I Search.
+                      </p>
                     </div>
-                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                      Visual Preview
-                    </h3>
-                  </div>
-                  {/* Disclaimer moved here for alignment */}
-                  <p className="text-xs text-slate-400">
-                    The images below are for illustration purposes only and may differ from the actual Google search results.
-                  </p>
-                </div>
 
-                {/* 2. Content Body (Padding matches Header px-5) */}
-                <div className="p-5">
-                  <PreviewPanel
-                    activeTab={activeTab}
-                    data={formData}
-                  />
+                    <SchemaForm
+                      activeTab={activeTab}
+                      onDataChange={setFormData}
+                    />
+                  </div>
+
+                  {/* Right: Preview Panel */}
+                  <div className="w-full lg:w-1/2 lg:sticky lg:top-24 z-10">
+                    <div className="bg-slate-50 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                      {/* 1. Unified Header Section */}
+                      <div className="px-5 pt-5 pb-4 border-b border-slate-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="p-1 bg-blue-100 rounded text-blue-600">
+                            <Info className="w-3.5 h-3.5" />
+                          </div>
+                          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                            Visual Preview
+                          </h3>
+                        </div>
+                        {/* Disclaimer moved here for alignment */}
+                        <p className="text-xs text-slate-400">
+                          The images below are for illustration purposes only and may differ from the actual Google search results.
+                        </p>
+                      </div>
+
+                      {/* 2. Content Body (Padding matches Header px-5) */}
+                      <div className="p-5">
+                        <PreviewPanel
+                          activeTab={activeTab}
+                          data={formData}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
-
-          </div>
-        </div>
+          </>
+        ) : (
+          <Documentation onGoHome={() => {
+            setView('home');
+            setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+          }} />
+        )}
       </div>
 
       {/* 4. Footer */}
